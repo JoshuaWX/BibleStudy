@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  background: #f7f8fa;
+  color: #151719;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #f7f8fb;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(109, 93, 246, 0.18);
+}
+
+.field-label {
+  @apply text-[15px] font-black text-[#626a7c];
+}
+
+.field-input {
+  @apply mt-2 w-full rounded-lg border border-[#e0e3ea] bg-white px-4 py-3.5 text-[16px] font-semibold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.06)] outline-none transition placeholder:text-[#9aa0af] focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10;
+}
+
+.field-error {
+  @apply mt-1.5 text-sm font-bold text-red-700;
+}
+
+.icon-button {
+  @apply inline-flex h-10 w-10 items-center justify-center rounded-md border border-chapel-line bg-white text-chapel-ink transition hover:border-chapel-green hover:text-chapel-green focus:outline-none focus:ring-4 focus:ring-chapel-green/10;
+}
