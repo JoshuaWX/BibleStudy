@@ -200,7 +200,7 @@ export function MemberForm() {
       {message ? (
         <div
           role="status"
-          className={`rounded-lg border px-4 py-3 text-sm font-bold ${
+          className={`rounded-2xl border px-4 py-3 text-sm font-bold ${
             status === "success"
               ? "border-emerald-200 bg-emerald-50 text-emerald-800"
               : "border-red-200 bg-red-50 text-red-800"
@@ -221,7 +221,7 @@ export function MemberForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-14 w-full items-center justify-center rounded-lg bg-[#6d5df6] px-6 text-base font-black text-white shadow-[0_12px_28px_rgba(109,93,246,0.24)] transition hover:bg-[#5c4bee] focus:outline-none focus:ring-4 focus:ring-[#725cff]/20 disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-[#6d5df6] px-6 text-base font-black text-white shadow-[0_12px_28px_rgba(109,93,246,0.24)] transition hover:bg-[#5c4bee] focus:outline-none focus:ring-4 focus:ring-[#725cff]/20 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Submit details

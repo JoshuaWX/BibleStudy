@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, LockKeyhole, Maximize2 } from "lucide-react";
+import { ArrowLeft, LockKeyhole } from "lucide-react";
 
+import { FloatingWindow } from "@/components/floating-window";
 import { LoginForm } from "@/components/login-form";
 import { getAdminEmails } from "@/lib/admin";
 
@@ -32,24 +33,9 @@ export default function AdminLoginPage() {
       </header>
 
       <section className="relative z-10 mx-auto flex min-h-[calc(100vh-80px)] w-full max-w-5xl items-center justify-center px-4 pb-12 pt-6 sm:px-6">
-        <div className="w-full max-w-[520px] rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_24px_80px_rgba(42,45,67,0.16)] backdrop-blur-xl sm:p-6">
-          <div className="mb-6 flex items-center justify-between border-b border-[#e8eaf0] pb-5">
-            <div className="flex items-center gap-2">
-              <span className="h-3.5 w-3.5 rounded-full bg-[#ff6661]" />
-              <span className="h-3.5 w-3.5 rounded-full bg-[#ffc247]" />
-              <span className="h-3.5 w-3.5 rounded-full bg-[#58cf61]" />
-            </div>
-            <button
-              type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e8eaf0] bg-white text-[#34384b] shadow-[0_8px_22px_rgba(33,37,55,0.12)]"
-              aria-label="Admin sign in"
-            >
-              <Maximize2 className="h-5 w-5" />
-            </button>
-          </div>
-
+        <FloatingWindow ariaLabel="admin sign in" size="login">
           <div className="mb-7 flex items-start gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#f2f0ff] text-[#6d5df6] ring-1 ring-[#e7e3ff]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#f2f0ff] text-[#6d5df6] ring-1 ring-[#e7e3ff]">
               <LockKeyhole className="h-5 w-5" />
             </div>
             <div>
@@ -64,14 +50,14 @@ export default function AdminLoginPage() {
           </div>
 
           {!hasAdminEmails ? (
-            <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
+            <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
               Add <span className="font-black">ADMIN_EMAILS</span> to the server environment before
               dashboard access is granted.
             </div>
           ) : null}
 
           <LoginForm />
-        </div>
+        </FloatingWindow>
       </section>
     </main>
   );

@@ -43,7 +43,7 @@ textarea {
 }
 
 .field-input {
-  @apply mt-2 w-full rounded-lg border border-[#e0e3ea] bg-white px-4 py-3.5 text-[16px] font-semibold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.06)] outline-none transition placeholder:text-[#9aa0af] focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10;
+  @apply mt-2 w-full rounded-2xl border border-[#e0e3ea] bg-white px-4 py-3.5 text-[16px] font-semibold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.06)] outline-none transition placeholder:text-[#9aa0af] focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10;
 }
 
 .field-error {

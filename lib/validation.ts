@@ -6,6 +6,9 @@ import { normalizeMatricNumber, normalizePhoneNumber } from "@/lib/normalize";
 const today = new Date();
 today.setHours(23, 59, 59, 999);
 
+const selectRequired = (message: string) =>
+  z.preprocess((value) => (value === "" ? undefined : value), z.string({ required_error: message }));
+
 export const memberFormSchema = z
   .object({
     surname: z.string().trim().min(2, "Enter a valid surname.").max(80),
@@ -19,16 +22,24 @@ export const memberFormSchema = z
         const parsed = new Date(`${value}T00:00:00`);
         return !Number.isNaN(parsed.getTime()) && parsed <= today;
       }, "Birthday cannot be in the future."),
-    gender: z.enum(GENDERS, { required_error: "Choose a gender." }),
+    gender: selectRequired("Choose a gender.").pipe(
+      z.enum(GENDERS, {
+        required_error: "Choose a gender.",
+        invalid_type_error: "Choose a gender."
+      })
+    ),
     matricNumber: z
       .string()
       .trim()
       .min(3, "Enter a valid matric number.")
       .max(40)
       .regex(/^[a-zA-Z0-9/_\-. ]+$/, "Use only letters, numbers, /, -, _, or ."),
-    trainingClassStatus: z.enum(TRAINING_STATUSES, {
-      required_error: "Choose a training class status."
-    }),
+    trainingClassStatus: selectRequired("Choose a training class status.").pipe(
+      z.enum(TRAINING_STATUSES, {
+        required_error: "Choose a training class status.",
+        invalid_type_error: "Choose a training class status."
+      })
+    ),
     trainingClassOther: z.string().trim().max(120).optional(),
     website: z.string().optional()
   })

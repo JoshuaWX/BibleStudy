@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, LockKeyhole, Maximize2 } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 
+import { FloatingWindow } from "@/components/floating-window";
 import { MemberForm } from "@/components/member-form";
 
 export default function HomePage() {
@@ -40,30 +41,9 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="w-full max-w-[720px] rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_24px_80px_rgba(42,45,67,0.16)] backdrop-blur-xl sm:p-6">
-          <div className="mb-5 flex items-center justify-between border-b border-[#e8eaf0] pb-5">
-            <div className="flex items-center gap-2">
-              <span className="h-3.5 w-3.5 rounded-full bg-[#ff6661]" />
-              <span className="h-3.5 w-3.5 rounded-full bg-[#ffc247]" />
-              <span className="h-3.5 w-3.5 rounded-full bg-[#58cf61]" />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="hidden items-center gap-2 rounded-lg bg-[#f5f6fb] px-3 py-2 text-xs font-black uppercase text-[#777b8e] sm:flex">
-                RUC Chapel
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </div>
-              <button
-                type="button"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e8eaf0] bg-white text-[#34384b] shadow-[0_8px_22px_rgba(33,37,55,0.12)]"
-                aria-label="Registration form"
-              >
-                <Maximize2 className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-
+        <FloatingWindow ariaLabel="registration form" size="form" toolbarLabel="RUC Chapel">
           <div className="mb-6 flex items-center gap-3">
-            <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-[#f7f8fb] ring-1 ring-[#e8eaf0]">
+            <div className="relative h-12 w-12 overflow-hidden rounded-2xl bg-[#f7f8fb] ring-1 ring-[#e8eaf0]">
               <Image src="/rccg-logo.png" alt="RCCG logo" fill sizes="48px" className="object-contain p-1.5" />
             </div>
             <div>
@@ -73,7 +53,7 @@ export default function HomePage() {
           </div>
 
           <MemberForm />
-        </div>
+        </FloatingWindow>
       </section>
     </main>
   );
