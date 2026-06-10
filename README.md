@@ -50,6 +50,8 @@ Security notes:
 
 That script creates the `members` table, indexes, uniqueness constraints, checks, trigger, and RLS posture.
 
+If the table already exists from an earlier version, run the updated SQL again. The script includes a safe upgrade section that adds the `level` column without breaking existing rows.
+
 Important:
 
 - `matric_number_key` is unique.
@@ -157,6 +159,7 @@ The member form collects:
 - Surname
 - Other names
 - Department
+- Level
 - Phone number
 - Birthday
 - Gender

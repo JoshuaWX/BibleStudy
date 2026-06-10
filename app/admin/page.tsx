@@ -5,7 +5,7 @@ import { Download, LogOut, Search, UsersRound } from "lucide-react";
 
 import { signOut } from "@/app/admin/login/actions";
 import { requireApprovedAdmin } from "@/lib/admin";
-import { GENDERS, TRAINING_STATUSES, isGender, isTrainingStatus } from "@/lib/constants";
+import { GENDERS, LEVELS, TRAINING_STATUSES, isGender, isLevel, isTrainingStatus } from "@/lib/constants";
 import { memberDisplayName, type MemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -14,6 +14,7 @@ type AdminPageProps = {
     q?: string;
     status?: string;
     gender?: string;
+    level?: string;
   };
 };
 
@@ -111,7 +112,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           />
         </div>
 
-        <form className="mb-5 grid gap-3 rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_18px_60px_rgba(42,45,67,0.10)] backdrop-blur-xl md:grid-cols-[1fr_220px_180px_auto]">
+        <form className="mb-5 grid gap-3 rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_18px_60px_rgba(42,45,67,0.10)] backdrop-blur-xl md:grid-cols-2 xl:grid-cols-[1fr_180px_220px_180px_auto]">
           <label className="relative block">
             <span className="sr-only">Search records</span>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b90a3]" />
@@ -119,9 +120,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               name="q"
               defaultValue={searchParams.q ?? ""}
               className="h-12 w-full rounded-lg border border-[#e0e3ea] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none placeholder:text-[#9aa0af] focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
-              placeholder="Search name, matric, phone, department"
+              placeholder="Search name, matric, phone, department, level"
             />
           </label>
+
+          <select
+            name="level"
+            defaultValue={searchParams.level ?? ""}
+            className="h-12 rounded-lg border border-[#e0e3ea] bg-white px-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
+          >
+            <option value="">All levels</option>
+            {LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {level}
+              </option>
+            ))}
+          </select>
 
           <select
             name="status"
@@ -174,6 +188,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <Th>Matric</Th>
                       <Th>Phone</Th>
                       <Th>Department</Th>
+                      <Th>Level</Th>
                       <Th>Birthday</Th>
                       <Th>Gender</Th>
                       <Th>Status</Th>
@@ -187,6 +202,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <Td>{member.matric_number}</Td>
                         <Td>{member.phone_number_key}</Td>
                         <Td>{member.department}</Td>
+                        <Td>{formatLevel(member.level)}</Td>
                         <Td>{formatDate(member.birthday)}</Td>
                         <Td>{member.gender}</Td>
                         <Td>
@@ -228,6 +244,10 @@ async function getMembers(filters: AdminPageProps["searchParams"]) {
     query = query.eq("gender", filters.gender);
   }
 
+  if (filters.level && isLevel(filters.level)) {
+    query = query.eq("level", filters.level);
+  }
+
   const { data, error } = await query;
 
   if (error) {
@@ -247,6 +267,7 @@ async function getMembers(filters: AdminPageProps["searchParams"]) {
       member.surname,
       member.other_names,
       member.department,
+      member.level ?? "",
       member.phone_number,
       member.phone_number_key,
       member.matric_number,
@@ -290,6 +311,7 @@ function MobileMemberCard({ member }: { member: MemberRecord }) {
       <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <CardLine label="Phone" value={member.phone_number_key} />
         <CardLine label="Department" value={member.department} />
+        <CardLine label="Level" value={formatLevel(member.level)} />
         <CardLine label="Birthday" value={formatDate(member.birthday)} />
         <CardLine
           label="Status"
@@ -310,6 +332,10 @@ function CardLine({ label, value }: { label: string; value: string }) {
       <p className="mt-1 font-bold leading-5 text-[#34384b]">{value}</p>
     </div>
   );
+}
+
+function formatLevel(value: string | null) {
+  return value ?? "Not recorded";
 }
 
 function Th({ children }: { children: ReactNode }) {

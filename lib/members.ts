@@ -6,6 +6,7 @@ export type MemberRecord = {
   surname: string;
   other_names: string;
   department: string;
+  level: string | null;
   phone_number: string;
   phone_number_key: string;
   birthday: string;
@@ -25,6 +26,7 @@ export function toMemberInsert(input: MemberFormInput) {
     surname: input.surname.trim(),
     other_names: input.otherNames.trim(),
     department: input.department.trim(),
+    level: input.level,
     phone_number: input.phoneNumber.trim(),
     phone_number_key: phoneKey,
     birthday: input.birthday,

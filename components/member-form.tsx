@@ -4,7 +4,7 @@ import { ArrowUpRight, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
-import { GENDERS, TRAINING_STATUSES } from "@/lib/constants";
+import { GENDERS, LEVELS, TRAINING_STATUSES } from "@/lib/constants";
 
 type FieldErrors = Record<string, string>;
 
@@ -12,6 +12,7 @@ const initialForm = {
   surname: "",
   otherNames: "",
   department: "",
+  level: "",
   phoneNumber: "",
   birthday: "",
   gender: "",
@@ -105,6 +106,22 @@ export function MemberForm() {
             placeholder="e.g. Computer Science"
             required
           />
+        </Field>
+
+        <Field label="Level" error={fieldErrors.level}>
+          <select
+            className="field-input"
+            value={form.level}
+            onChange={(event) => updateField("level", event.target.value)}
+            required
+          >
+            <option value="">Select level</option>
+            {LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {level}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <Field label="Phone Number" error={fieldErrors.phoneNumber}>

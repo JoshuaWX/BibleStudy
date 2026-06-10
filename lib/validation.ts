@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { GENDERS, TRAINING_STATUSES } from "@/lib/constants";
+import { GENDERS, LEVELS, TRAINING_STATUSES } from "@/lib/constants";
 import { normalizeMatricNumber, normalizePhoneNumber } from "@/lib/normalize";
 
 const today = new Date();
@@ -14,6 +14,12 @@ export const memberFormSchema = z
     surname: z.string().trim().min(2, "Enter a valid surname.").max(80),
     otherNames: z.string().trim().min(2, "Enter the member's other names.").max(120),
     department: z.string().trim().min(2, "Enter the department.").max(120),
+    level: selectRequired("Choose a level.").pipe(
+      z.enum(LEVELS, {
+        required_error: "Choose a level.",
+        invalid_type_error: "Choose a level."
+      })
+    ),
     phoneNumber: z.string().trim().min(7, "Enter a valid phone number.").max(30),
     birthday: z
       .string()

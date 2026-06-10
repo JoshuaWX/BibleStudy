@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isApprovedAdmin } from "@/lib/admin";
-import { GENDERS, TRAINING_STATUSES, isGender, isTrainingStatus } from "@/lib/constants";
+import { GENDERS, TRAINING_STATUSES, isGender, isLevel, isTrainingStatus } from "@/lib/constants";
 import { type MemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
   const members = await getExportMembers({
     q: params.get("q") ?? "",
     status: params.get("status") ?? "",
-    gender: params.get("gender") ?? ""
+    gender: params.get("gender") ?? "",
+    level: params.get("level") ?? ""
   });
 
   const csv = toCsv(members);
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
   });
 }
 
-async function getExportMembers(filters: { q: string; status: string; gender: string }) {
+async function getExportMembers(filters: { q: string; status: string; gender: string; level: string }) {
   const supabase = createSupabaseAdminClient();
   let query = supabase
     .from("members")
@@ -49,6 +50,10 @@ async function getExportMembers(filters: { q: string; status: string; gender: st
 
   if (filters.gender && isGender(filters.gender)) {
     query = query.eq("gender", filters.gender);
+  }
+
+  if (filters.level && isLevel(filters.level)) {
+    query = query.eq("level", filters.level);
   }
 
   const { data, error } = await query;
@@ -70,6 +75,7 @@ async function getExportMembers(filters: { q: string; status: string; gender: st
       member.surname,
       member.other_names,
       member.department,
+      member.level ?? "",
       member.phone_number,
       member.phone_number_key,
       member.matric_number,
@@ -88,6 +94,7 @@ function toCsv(members: MemberRecord[]) {
     "Surname",
     "Other Names",
     "Department",
+    "Level",
     "Phone Number",
     "Birthday",
     "Gender",
@@ -101,6 +108,7 @@ function toCsv(members: MemberRecord[]) {
     member.surname,
     member.other_names,
     member.department,
+    member.level ?? "",
     member.phone_number_key,
     member.birthday,
     member.gender,
