@@ -100,7 +100,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             label="Training classes"
             value={
               members.filter((member) =>
-                ["In Workers in training class", "In baptismal class", "In Believers class"].includes(
+                [
+                  "In Workers in training class",
+                  "On workers IT",
+                  "In baptismal class",
+                  "In Believers class"
+                ].includes(
                   member.training_class_status
                 )
               ).length.toString()

@@ -21,6 +21,7 @@ create table if not exists public.members (
       'Teacher',
       'Assistant teacher',
       'In Workers in training class',
+      'On workers IT',
       'In baptismal class',
       'In Believers class',
       'Other'
@@ -52,6 +53,34 @@ create index if not exists members_submitted_at_idx
 
 create index if not exists members_training_class_status_idx
   on public.members (training_class_status);
+
+do $$
+begin
+  alter table public.members
+    drop constraint if exists members_training_class_status_check;
+
+  alter table public.members
+    drop constraint if exists members_training_class_status_allowed;
+
+  alter table public.members
+    add constraint members_training_class_status_allowed
+    check (
+      training_class_status in (
+        'Teacher',
+        'Assistant teacher',
+        'In Workers in training class',
+        'On workers IT',
+        'In baptismal class',
+        'In Believers class',
+        'Other'
+      )
+    )
+    not valid;
+exception
+  when duplicate_object then
+    null;
+end;
+$$;
 
 create index if not exists members_gender_idx
   on public.members (gender);

@@ -2,6 +2,7 @@ export const TRAINING_STATUSES = [
   "Teacher",
   "Assistant teacher",
   "In Workers in training class",
+  "On workers IT",
   "In baptismal class",
   "In Believers class",
   "Other"
