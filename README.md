@@ -2,15 +2,16 @@
 
 A secure member-registration and admin-dashboard application for the Redeemer's University Chapel of Power Bible Study Department.
 
-The public form collects member details once, blocks duplicate matric numbers and phone numbers at the database level, and keeps all member records behind a protected admin dashboard.
+The public form collects member details once, blocks duplicate matric numbers and phone numbers at the database level, and then offers an optional anonymous feedback step. Member records and feedback records are stored separately.
 
 ## Features
 
 - Public member form with responsive, polished UI.
+- Optional two-question anonymous feedback flow after successful registration.
 - Server-side form submission through Next.js route handlers.
 - Supabase Postgres storage with database-level unique constraints.
 - Phone number and matric number normalization before insert.
-- Protected admin dashboard with search, filters, record cards/table, and CSV export.
+- Protected admin dashboard with member search, filters, anonymous feedback view, and CSV exports.
 - Supabase Auth email/password login for admins.
 - Server-side `ADMIN_EMAILS` allowlist for admin authorization.
 - RLS-enabled database table with no public read policy.
@@ -48,7 +49,7 @@ Security notes:
 2. Go to **SQL Editor**.
 3. Run the SQL in `supabase/schema.sql`.
 
-That script creates the `members` table, indexes, uniqueness constraints, checks, trigger, and RLS posture.
+That script creates the `members` and `anonymous_feedback` tables, indexes, uniqueness constraints, checks, trigger, and RLS posture.
 
 If the table already exists from an earlier version, run the updated SQL again. The script includes a safe upgrade section that adds the `level` column without breaking existing rows.
 
@@ -58,7 +59,8 @@ Important:
 - `phone_number_key` is unique.
 - RLS is enabled and forced.
 - No public `anon` or `authenticated` table policies are created.
-- The app reads/writes member rows only from server-side code using the service-role key.
+- The app reads/writes member and feedback rows only from server-side code using the service-role key.
+- Anonymous feedback is not linked to member records and does not store member identifiers, IP addresses, user agents, level, or class status.
 
 ## Admin Password Setup
 
@@ -114,7 +116,8 @@ Useful routes:
 - `/` - public member form
 - `/admin/login` - admin sign in
 - `/admin` - protected admin dashboard
-- `/admin/export` - protected CSV export
+- `/admin/export` - protected member CSV export
+- `/admin/feedback/export` - protected anonymous feedback CSV export
 
 ## Verification
 
@@ -167,6 +170,22 @@ The member form collects:
 - Training class status
 - Optional custom status when `Other` is selected
 
+The optional anonymous feedback step collects:
+
+- Observations and reviews concerning Bible Study
+- Suggestions to implement moving forward
+
+Anonymous feedback intentionally does not collect or store:
+
+- Name
+- Matric number
+- Phone number
+- Department
+- Level
+- Training class status
+- IP address
+- User agent
+
 ## Security Checklist
 
 - `.env` is ignored by Git.
@@ -174,6 +193,8 @@ The member form collects:
 - Member submission is handled by a server route.
 - Duplicate protection is enforced by Postgres unique indexes.
 - Public clients cannot read member rows through Supabase Data API.
+- Public clients cannot read anonymous feedback rows through Supabase Data API.
+- Feedback is stored in `anonymous_feedback`, separate from `members`.
 - Admin routes require both Supabase Auth and the email allowlist.
 - CSV export requires approved admin access.
 

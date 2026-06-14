@@ -6,6 +6,7 @@ import { Download, LogOut, Search, UsersRound } from "lucide-react";
 import { signOut } from "@/app/admin/login/actions";
 import { requireApprovedAdmin } from "@/lib/admin";
 import { GENDERS, LEVELS, TRAINING_STATUSES, isGender, isLevel, isTrainingStatus } from "@/lib/constants";
+import { type AnonymousFeedbackRecord } from "@/lib/feedback";
 import { memberDisplayName, type MemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -15,13 +16,25 @@ type AdminPageProps = {
     status?: string;
     gender?: string;
     level?: string;
+    feedbackQ?: string;
   };
 };
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const user = await requireApprovedAdmin();
   const members = await getMembers(searchParams);
-  const exportHref = `/admin/export?${new URLSearchParams(cleanFilters(searchParams)).toString()}`;
+  const feedbackItems = await getFeedback(searchParams.feedbackQ ?? "");
+  const exportHref = `/admin/export?${new URLSearchParams(
+    cleanFilters({
+      q: searchParams.q,
+      status: searchParams.status,
+      gender: searchParams.gender,
+      level: searchParams.level
+    })
+  ).toString()}`;
+  const feedbackExportHref = `/admin/feedback/export?${new URLSearchParams(
+    cleanFilters({ feedbackQ: searchParams.feedbackQ })
+  ).toString()}`;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#f7f8fb] text-[#222636]">
@@ -228,6 +241,69 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <p className="mt-2 text-sm font-bold text-[#74798a]">Try adjusting the search or filters.</p>
           </div>
         )}
+
+        <section className="mt-8 rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_18px_60px_rgba(42,45,67,0.10)] backdrop-blur-xl sm:p-5">
+          <div className="mb-5 flex flex-col gap-4 border-b border-[#e8eaf0] pb-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase text-[#8b90a3]">Anonymous feedback</p>
+              <h2 className="mt-2 text-2xl font-black text-[#20233a]">Bible Study observations</h2>
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[#74798a]">
+                These responses are intentionally stored separately from member records.
+              </p>
+            </div>
+            <Link
+              href={feedbackExportHref}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#6d5df6] px-4 text-sm font-black text-white shadow-[0_12px_28px_rgba(109,93,246,0.22)] transition hover:bg-[#5c4bee] focus:outline-none focus:ring-4 focus:ring-[#725cff]/20"
+            >
+              Export feedback CSV
+            </Link>
+          </div>
+
+          <form className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto]">
+            <label className="relative block">
+              <span className="sr-only">Search anonymous feedback</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b90a3]" />
+              <input
+                name="feedbackQ"
+                defaultValue={searchParams.feedbackQ ?? ""}
+                className="h-12 w-full rounded-lg border border-[#e0e3ea] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none placeholder:text-[#9aa0af] focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
+                placeholder="Search feedback text"
+              />
+            </label>
+            <button
+              type="submit"
+              className="h-12 rounded-lg border border-[#e0e3ea] bg-white px-5 text-sm font-black text-[#34384b] shadow-[0_5px_16px_rgba(25,29,45,0.05)] transition hover:border-[#cfd3df] focus:outline-none focus:ring-4 focus:ring-[#725cff]/10"
+            >
+              Search
+            </button>
+          </form>
+
+          {feedbackItems.length ? (
+            <div className="grid gap-3">
+              {feedbackItems.map((item) => (
+                <article key={item.id} className="rounded-2xl border border-[#e8eaf0] bg-white p-4">
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <FeedbackBlock
+                      label="Observation / Review"
+                      value={item.observation_review}
+                    />
+                    <FeedbackBlock label="Suggestion" value={item.suggestion} />
+                  </div>
+                  <p className="mt-4 border-t border-[#e8eaf0] pt-3 text-xs font-bold text-[#8b90a3]">
+                    Submitted {formatDateTime(item.submitted_at)}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-[#e8eaf0] bg-white px-4 py-12 text-center">
+              <p className="text-lg font-black text-[#20233a]">No anonymous feedback found</p>
+              <p className="mt-2 text-sm font-bold text-[#74798a]">
+                Feedback will appear here after members submit it.
+              </p>
+            </div>
+          )}
+        </section>
       </section>
     </main>
   );
@@ -286,6 +362,31 @@ async function getMembers(filters: AdminPageProps["searchParams"]) {
   );
 }
 
+async function getFeedback(searchTerm: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("anonymous_feedback")
+    .select("*")
+    .order("submitted_at", { ascending: false })
+    .limit(1000);
+
+  if (error) {
+    console.error("Admin feedback fetch failed", error);
+    return [];
+  }
+
+  const feedbackItems = (data ?? []) as AnonymousFeedbackRecord[];
+  const term = searchTerm.trim().toLowerCase();
+
+  if (!term) {
+    return feedbackItems;
+  }
+
+  return feedbackItems.filter((item) =>
+    [item.observation_review, item.suggestion].join(" ").toLowerCase().includes(term)
+  );
+}
+
 function cleanFilters(filters: AdminPageProps["searchParams"]) {
   return Object.fromEntries(
     Object.entries(filters).filter(([, value]) => typeof value === "string" && value.trim())
@@ -335,6 +436,17 @@ function CardLine({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs font-black uppercase text-[#9aa0af]">{label}</p>
       <p className="mt-1 font-bold leading-5 text-[#34384b]">{value}</p>
+    </div>
+  );
+}
+
+function FeedbackBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-black uppercase text-[#9aa0af]">{label}</p>
+      <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-7 text-[#34384b]">
+        {value}
+      </p>
     </div>
   );
 }

@@ -136,3 +136,58 @@ alter table public.members force row level security;
 -- insert, update, or delete member rows through the Data API.
 revoke all on public.members from anon;
 revoke all on public.members from authenticated;
+
+create table if not exists public.anonymous_feedback (
+  id uuid primary key default gen_random_uuid(),
+  observation_review text not null check (char_length(trim(observation_review)) between 3 and 2000),
+  suggestion text not null check (char_length(trim(suggestion)) between 3 and 2000),
+  submitted_at timestamptz not null default now()
+);
+
+alter table public.anonymous_feedback
+  add column if not exists observation_review text;
+
+alter table public.anonymous_feedback
+  add column if not exists suggestion text;
+
+alter table public.anonymous_feedback
+  add column if not exists submitted_at timestamptz not null default now();
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'anonymous_feedback_observation_review_length'
+      and conrelid = 'public.anonymous_feedback'::regclass
+  ) then
+    alter table public.anonymous_feedback
+      add constraint anonymous_feedback_observation_review_length
+      check (char_length(trim(observation_review)) between 3 and 2000)
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'anonymous_feedback_suggestion_length'
+      and conrelid = 'public.anonymous_feedback'::regclass
+  ) then
+    alter table public.anonymous_feedback
+      add constraint anonymous_feedback_suggestion_length
+      check (char_length(trim(suggestion)) between 3 and 2000)
+      not valid;
+  end if;
+end;
+$$;
+
+create index if not exists anonymous_feedback_submitted_at_idx
+  on public.anonymous_feedback (submitted_at desc);
+
+alter table public.anonymous_feedback enable row level security;
+alter table public.anonymous_feedback force row level security;
+
+-- Anonymous feedback is written/read only through server-side service-role routes.
+-- No member identifiers, IP addresses, user agents, or profile context are stored.
+revoke all on public.anonymous_feedback from anon;
+revoke all on public.anonymous_feedback from authenticated;
