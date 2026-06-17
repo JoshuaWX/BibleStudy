@@ -15,6 +15,7 @@ export type MemberRecord = {
   matric_number_key: string;
   training_class_status: string;
   training_class_other: string | null;
+  bible_study_unit: string | null;
   submitted_at: string;
 };
 
@@ -35,7 +36,8 @@ export function toMemberInsert(input: MemberFormInput) {
     matric_number_key: matricKey,
     training_class_status: input.trainingClassStatus,
     training_class_other:
-      input.trainingClassStatus === "Other" ? input.trainingClassOther?.trim() || null : null
+      input.trainingClassStatus === "Other" ? input.trainingClassOther?.trim() || null : null,
+    bible_study_unit: input.bibleStudyUnit
   };
 }
 

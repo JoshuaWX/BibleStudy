@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { GENDERS, LEVELS, TRAINING_STATUSES } from "@/lib/constants";
+import { BIBLE_STUDY_UNITS, GENDERS, LEVELS, TRAINING_STATUSES } from "@/lib/constants";
 import { normalizeMatricNumber, normalizePhoneNumber } from "@/lib/normalize";
 
 const today = new Date();
@@ -44,6 +44,12 @@ export const memberFormSchema = z
       z.enum(TRAINING_STATUSES, {
         required_error: "Choose a training class status.",
         invalid_type_error: "Choose a training class status."
+      })
+    ),
+    bibleStudyUnit: selectRequired("Choose a Bible Study unit.").pipe(
+      z.enum(BIBLE_STUDY_UNITS, {
+        required_error: "Choose a Bible Study unit.",
+        invalid_type_error: "Choose a Bible Study unit."
       })
     ),
     trainingClassOther: z.string().trim().max(120).optional(),

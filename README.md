@@ -51,7 +51,7 @@ Security notes:
 
 That script creates the `members` and `anonymous_feedback` tables, indexes, uniqueness constraints, checks, trigger, and RLS posture.
 
-If the table already exists from an earlier version, run the updated SQL again. The script includes a safe upgrade section that adds the `level` column without breaking existing rows.
+If the table already exists from an earlier version, run the updated SQL again. The script includes safe upgrade sections that add the `level` and `bible_study_unit` columns without breaking existing rows.
 
 Important:
 
@@ -163,6 +163,7 @@ The member form collects:
 - Other names
 - Department
 - Level
+- Bible Study unit preference
 - Phone number
 - Birthday
 - Gender
@@ -182,6 +183,7 @@ Anonymous feedback intentionally does not collect or store:
 - Phone number
 - Department
 - Level
+- Bible Study unit preference
 - Training class status
 - IP address
 - User agent

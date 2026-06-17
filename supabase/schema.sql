@@ -10,6 +10,14 @@ create table if not exists public.members (
   other_names text not null check (char_length(trim(other_names)) between 2 and 120),
   department text not null check (char_length(trim(department)) between 2 and 120),
   level text not null check (level in ('100 level', '200 level', '300 level', '400 level', '500 level')),
+  bible_study_unit text not null check (
+    bible_study_unit in (
+      'Prayer unit',
+      'Compliance unit',
+      'Welfare unit',
+      'Outline-Collation unit'
+    )
+  ),
   phone_number text not null check (char_length(trim(phone_number)) between 7 and 30),
   phone_number_key text not null check (phone_number_key ~ '^\+[0-9]{7,15}$'),
   birthday date not null check (birthday <= current_date),
@@ -111,6 +119,38 @@ $$;
 
 create index if not exists members_level_idx
   on public.members (level);
+
+-- Safe upgrade path for databases created before the Bible Study unit field existed.
+-- Existing rows can remain null; the application requires this field for all new submissions.
+alter table public.members
+  add column if not exists bible_study_unit text;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'members_bible_study_unit_allowed'
+      and conrelid = 'public.members'::regclass
+  ) then
+    alter table public.members
+      add constraint members_bible_study_unit_allowed
+      check (
+        bible_study_unit is null
+        or bible_study_unit in (
+          'Prayer unit',
+          'Compliance unit',
+          'Welfare unit',
+          'Outline-Collation unit'
+        )
+      )
+      not valid;
+  end if;
+end;
+$$;
+
+create index if not exists members_bible_study_unit_idx
+  on public.members (bible_study_unit);
 
 create or replace function public.set_members_updated_at()
 returns trigger

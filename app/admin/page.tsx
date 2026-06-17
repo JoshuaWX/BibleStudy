@@ -138,7 +138,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               name="q"
               defaultValue={searchParams.q ?? ""}
               className="h-12 w-full rounded-lg border border-[#e0e3ea] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none placeholder:text-[#9aa0af] focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
-              placeholder="Search name, matric, phone, department, level"
+              placeholder="Search name, matric, phone, department, level, unit"
             />
           </label>
 
@@ -199,7 +199,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             <div className="hidden overflow-hidden rounded-lg border border-white/80 bg-white/82 shadow-[0_18px_60px_rgba(42,45,67,0.10)] backdrop-blur-xl lg:block">
               <div className="overflow-x-auto">
-                <table className="min-w-[1100px] w-full border-collapse text-left text-sm">
+                <table className="min-w-[1220px] w-full border-collapse text-left text-sm">
                   <thead className="bg-[#f6f7fb] text-xs font-black uppercase text-[#7c8295]">
                     <tr>
                       <Th>Name</Th>
@@ -207,6 +207,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <Th>Phone</Th>
                       <Th>Department</Th>
                       <Th>Level</Th>
+                      <Th>Unit</Th>
                       <Th>Birthday</Th>
                       <Th>Gender</Th>
                       <Th>Status</Th>
@@ -221,6 +222,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <Td>{member.phone_number_key}</Td>
                         <Td>{member.department}</Td>
                         <Td>{formatLevel(member.level)}</Td>
+                        <Td>{formatBibleStudyUnit(member.bible_study_unit)}</Td>
                         <Td>{formatDate(member.birthday)}</Td>
                         <Td>{member.gender}</Td>
                         <Td>
@@ -349,6 +351,7 @@ async function getMembers(filters: AdminPageProps["searchParams"]) {
       member.other_names,
       member.department,
       member.level ?? "",
+      member.bible_study_unit ?? "",
       member.phone_number,
       member.phone_number_key,
       member.matric_number,
@@ -418,6 +421,7 @@ function MobileMemberCard({ member }: { member: MemberRecord }) {
         <CardLine label="Phone" value={member.phone_number_key} />
         <CardLine label="Department" value={member.department} />
         <CardLine label="Level" value={formatLevel(member.level)} />
+        <CardLine label="Bible Study Unit" value={formatBibleStudyUnit(member.bible_study_unit)} />
         <CardLine label="Birthday" value={formatDate(member.birthday)} />
         <CardLine
           label="Status"
@@ -452,6 +456,10 @@ function FeedbackBlock({ label, value }: { label: string; value: string }) {
 }
 
 function formatLevel(value: string | null) {
+  return value ?? "Not recorded";
+}
+
+function formatBibleStudyUnit(value: string | null) {
   return value ?? "Not recorded";
 }
 

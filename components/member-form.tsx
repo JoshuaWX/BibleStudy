@@ -4,7 +4,7 @@ import { ArrowUpRight, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
-import { GENDERS, LEVELS, TRAINING_STATUSES } from "@/lib/constants";
+import { BIBLE_STUDY_UNITS, GENDERS, LEVELS, TRAINING_STATUSES } from "@/lib/constants";
 
 type FieldErrors = Record<string, string>;
 
@@ -19,6 +19,7 @@ const initialForm = {
   matricNumber: "",
   trainingClassStatus: "",
   trainingClassOther: "",
+  bibleStudyUnit: "",
   website: ""
 };
 
@@ -355,6 +356,27 @@ export function MemberForm() {
             </Field>
           </div>
         ) : null}
+
+        <div className="sm:col-span-2">
+          <Field
+            label="What unit would you like to join in Bible Study?"
+            error={fieldErrors.bibleStudyUnit}
+          >
+            <select
+              className="field-input"
+              value={form.bibleStudyUnit}
+              onChange={(event) => updateField("bibleStudyUnit", event.target.value)}
+              required
+            >
+              <option value="">Select unit</option>
+              {BIBLE_STUDY_UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
       </div>
 
       <input
