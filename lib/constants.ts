@@ -16,7 +16,8 @@ export const BIBLE_STUDY_UNITS = [
   "Prayer unit",
   "Compliance unit",
   "Welfare unit",
-  "Outline-Collation unit"
+  "Outline-Collation unit",
+  "not interested"
 ] as const;
 
 export type TrainingStatus = (typeof TRAINING_STATUSES)[number];

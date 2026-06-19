@@ -15,7 +15,8 @@ create table if not exists public.members (
       'Prayer unit',
       'Compliance unit',
       'Welfare unit',
-      'Outline-Collation unit'
+      'Outline-Collation unit',
+      'not interested'
     )
   ),
   phone_number text not null check (char_length(trim(phone_number)) between 7 and 30),
@@ -127,25 +128,28 @@ alter table public.members
 
 do $$
 begin
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'members_bible_study_unit_allowed'
-      and conrelid = 'public.members'::regclass
-  ) then
-    alter table public.members
-      add constraint members_bible_study_unit_allowed
-      check (
-        bible_study_unit is null
-        or bible_study_unit in (
-          'Prayer unit',
-          'Compliance unit',
-          'Welfare unit',
-          'Outline-Collation unit'
-        )
+  alter table public.members
+    drop constraint if exists members_bible_study_unit_check;
+
+  alter table public.members
+    drop constraint if exists members_bible_study_unit_allowed;
+
+  alter table public.members
+    add constraint members_bible_study_unit_allowed
+    check (
+      bible_study_unit is null
+      or bible_study_unit in (
+        'Prayer unit',
+        'Compliance unit',
+        'Welfare unit',
+        'Outline-Collation unit',
+        'not interested'
       )
-      not valid;
-  end if;
+    )
+    not valid;
+exception
+  when duplicate_object then
+    null;
 end;
 $$;
 
