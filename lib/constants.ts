@@ -17,6 +17,7 @@ export const BIBLE_STUDY_UNITS = [
   "Compliance unit",
   "Welfare unit",
   "Outline-Collation unit",
+  "Media unit",
   "not interested"
 ] as const;
 

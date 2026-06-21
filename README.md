@@ -12,6 +12,9 @@ The public form collects member details once, blocks duplicate matric numbers an
 - Supabase Postgres storage with database-level unique constraints.
 - Phone number and matric number normalization before insert.
 - Protected admin dashboard with member search, filters, anonymous feedback view, and CSV exports.
+- Worship centre allocation workspace with individual and bulk assignment.
+- Admin-managed worship centres with archive and restore behavior.
+- Public matric-number lookup that returns only a member's assigned centre.
 - Supabase Auth email/password login for admins.
 - Server-side `ADMIN_EMAILS` allowlist for admin authorization.
 - RLS-enabled database table with no public read policy.
@@ -49,7 +52,7 @@ Security notes:
 2. Go to **SQL Editor**.
 3. Run the SQL in `supabase/schema.sql`.
 
-That script creates the `members` and `anonymous_feedback` tables, indexes, uniqueness constraints, checks, trigger, and RLS posture.
+That script creates the `members`, `anonymous_feedback`, `worship_centres`, and `member_allocations` tables, indexes, uniqueness constraints, checks, triggers, seed centres, and RLS posture.
 
 If the table already exists from an earlier version, run the updated SQL again. The script includes safe upgrade sections that add the `level` and `bible_study_unit` columns without breaking existing rows.
 
@@ -61,6 +64,8 @@ Important:
 - No public `anon` or `authenticated` table policies are created.
 - The app reads/writes member and feedback rows only from server-side code using the service-role key.
 - Anonymous feedback is not linked to member records and does not store member identifiers, IP addresses, user agents, level, or class status.
+- Worship centres and member allocations have forced RLS and no browser-readable policies.
+- Apply the updated SQL before deploying allocation pages that query the new tables.
 
 ## Admin Password Setup
 
@@ -116,8 +121,11 @@ Useful routes:
 - `/` - public member form
 - `/admin/login` - admin sign in
 - `/admin` - protected admin dashboard
+- `/admin/allocations` - protected allocation workspace
+- `/admin/centres` - protected worship centre management
 - `/admin/export` - protected member CSV export
 - `/admin/feedback/export` - protected anonymous feedback CSV export
+- `/allocation` - public worship centre lookup
 
 ## Verification
 
@@ -170,6 +178,9 @@ The member form collects:
 - Matric number
 - Training class status
 - Optional custom status when `Other` is selected
+- Preferred Bible Study unit, including `Media unit`
+
+Admins can additionally assign each member to one current worship centre. Allocation records store the centre, assigning admin ID, and assignment timestamps.
 
 The optional anonymous feedback step collects:
 
@@ -196,6 +207,9 @@ Anonymous feedback intentionally does not collect or store:
 - Duplicate protection is enforced by Postgres unique indexes.
 - Public clients cannot read member rows through Supabase Data API.
 - Public clients cannot read anonymous feedback rows through Supabase Data API.
+- Public clients cannot read worship centres or member allocations through Supabase Data API.
+- The public lookup route returns only the assigned centre name and never member profile details.
+- Allocation lookup responses are rate-limited and not cached.
 - Feedback is stored in `anonymous_feedback`, separate from `members`.
 - Admin routes require both Supabase Auth and the email allowlist.
 - CSV export requires approved admin access.

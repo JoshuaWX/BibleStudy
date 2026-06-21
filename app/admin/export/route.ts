@@ -1,6 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isApprovedAdmin } from "@/lib/admin";
+import {
+  attachAllocations,
+  type AllocationMember,
+  type MemberAllocation,
+  type WorshipCentre
+} from "@/lib/allocations";
 import { GENDERS, TRAINING_STATUSES, isGender, isLevel, isTrainingStatus } from "@/lib/constants";
 import { type MemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -63,7 +69,24 @@ async function getExportMembers(filters: { q: string; status: string; gender: st
     return [];
   }
 
-  const members = (data ?? []) as MemberRecord[];
+  const [allocationsResult, centresResult] = await Promise.all([
+    supabase.from("member_allocations").select("*").limit(5000),
+    supabase.from("worship_centres").select("*")
+  ]);
+
+  if (allocationsResult.error) {
+    console.error("Admin export allocations fetch failed", allocationsResult.error);
+  }
+
+  if (centresResult.error) {
+    console.error("Admin export centres fetch failed", centresResult.error);
+  }
+
+  const members = attachAllocations(
+    (data ?? []) as MemberRecord[],
+    (allocationsResult.data ?? []) as MemberAllocation[],
+    (centresResult.data ?? []) as WorshipCentre[]
+  );
   const term = filters.q.trim().toLowerCase();
 
   if (!term) {
@@ -82,7 +105,8 @@ async function getExportMembers(filters: { q: string; status: string; gender: st
       member.matric_number,
       member.matric_number_key,
       member.training_class_status,
-      member.training_class_other ?? ""
+      member.training_class_other ?? "",
+      member.allocation?.centre.name ?? ""
     ]
       .join(" ")
       .toLowerCase()
@@ -90,7 +114,7 @@ async function getExportMembers(filters: { q: string; status: string; gender: st
   );
 }
 
-function toCsv(members: MemberRecord[]) {
+function toCsv(members: AllocationMember[]) {
   const headers = [
     "Surname",
     "Other Names",
@@ -103,6 +127,9 @@ function toCsv(members: MemberRecord[]) {
     "Matric Number",
     "Training Class Status",
     "Other Status",
+    "Worship Centre",
+    "Allocation Status",
+    "Allocated At",
     "Submitted At"
   ];
 
@@ -118,6 +145,9 @@ function toCsv(members: MemberRecord[]) {
     member.matric_number,
     member.training_class_status,
     member.training_class_other ?? "",
+    member.allocation?.centre.name ?? "",
+    member.allocation ? "Allocated" : "Unallocated",
+    member.allocation?.assigned_at ?? "",
     member.submitted_at
   ]);
 

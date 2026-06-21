@@ -4,36 +4,46 @@ import type { ReactNode } from "react";
 import { Download, LogOut, Search, UsersRound } from "lucide-react";
 
 import { signOut } from "@/app/admin/login/actions";
+import { AdminNav } from "@/components/admin-nav";
 import { requireApprovedAdmin } from "@/lib/admin";
+import {
+  attachAllocations,
+  type AllocationMember,
+  type MemberAllocation,
+  type WorshipCentre
+} from "@/lib/allocations";
 import { GENDERS, LEVELS, TRAINING_STATUSES, isGender, isLevel, isTrainingStatus } from "@/lib/constants";
 import { type AnonymousFeedbackRecord } from "@/lib/feedback";
 import { memberDisplayName, type MemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
+type AdminSearchParams = {
+  q?: string;
+  status?: string;
+  gender?: string;
+  level?: string;
+  feedbackQ?: string;
+};
+
 type AdminPageProps = {
-  searchParams: {
-    q?: string;
-    status?: string;
-    gender?: string;
-    level?: string;
-    feedbackQ?: string;
-  };
+  searchParams: Promise<AdminSearchParams>;
 };
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const user = await requireApprovedAdmin();
-  const members = await getMembers(searchParams);
-  const feedbackItems = await getFeedback(searchParams.feedbackQ ?? "");
+  const filters = await searchParams;
+  const members = await getMembers(filters);
+  const feedbackItems = await getFeedback(filters.feedbackQ ?? "");
   const exportHref = `/admin/export?${new URLSearchParams(
     cleanFilters({
-      q: searchParams.q,
-      status: searchParams.status,
-      gender: searchParams.gender,
-      level: searchParams.level
+      q: filters.q,
+      status: filters.status,
+      gender: filters.gender,
+      level: filters.level
     })
   ).toString()}`;
   const feedbackExportHref = `/admin/feedback/export?${new URLSearchParams(
-    cleanFilters({ feedbackQ: searchParams.feedbackQ })
+    cleanFilters({ feedbackQ: filters.feedbackQ })
   ).toString()}`;
 
   return (
@@ -73,6 +83,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </header>
 
       <section className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8">
+        <AdminNav active="members" />
         <div className="mb-5 rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_24px_80px_rgba(42,45,67,0.12)] backdrop-blur-xl sm:p-6">
           <div className="mb-5 flex items-center justify-between border-b border-[#e8eaf0] pb-5">
             <div className="flex items-center gap-2">
@@ -103,8 +114,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </div>
         </div>
 
-        <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Metric label="Total shown" value={members.length.toString()} />
+          <Metric label="Allocated" value={members.filter((member) => member.allocation).length.toString()} />
+          <Metric label="Unallocated" value={members.filter((member) => !member.allocation).length.toString()} />
           <Metric
             label="Teachers"
             value={members.filter((member) => member.training_class_status === "Teacher").length.toString()}
@@ -136,15 +149,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b90a3]" />
             <input
               name="q"
-              defaultValue={searchParams.q ?? ""}
+              defaultValue={filters.q ?? ""}
               className="h-12 w-full rounded-lg border border-[#e0e3ea] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none placeholder:text-[#9aa0af] focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
-              placeholder="Search name, matric, phone, department, level, unit"
+              placeholder="Search name, matric, phone, department, level, unit, centre"
             />
           </label>
 
           <select
             name="level"
-            defaultValue={searchParams.level ?? ""}
+            defaultValue={filters.level ?? ""}
             className="h-12 rounded-lg border border-[#e0e3ea] bg-white px-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
           >
             <option value="">All levels</option>
@@ -157,7 +170,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           <select
             name="status"
-            defaultValue={searchParams.status ?? ""}
+            defaultValue={filters.status ?? ""}
             className="h-12 rounded-lg border border-[#e0e3ea] bg-white px-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
           >
             <option value="">All statuses</option>
@@ -170,7 +183,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           <select
             name="gender"
-            defaultValue={searchParams.gender ?? ""}
+            defaultValue={filters.gender ?? ""}
             className="h-12 rounded-lg border border-[#e0e3ea] bg-white px-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
           >
             <option value="">All genders</option>
@@ -199,7 +212,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             <div className="hidden overflow-hidden rounded-lg border border-white/80 bg-white/82 shadow-[0_18px_60px_rgba(42,45,67,0.10)] backdrop-blur-xl lg:block">
               <div className="overflow-x-auto">
-                <table className="min-w-[1220px] w-full border-collapse text-left text-sm">
+                <table className="min-w-[1360px] w-full border-collapse text-left text-sm">
                   <thead className="bg-[#f6f7fb] text-xs font-black uppercase text-[#7c8295]">
                     <tr>
                       <Th>Name</Th>
@@ -211,6 +224,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <Th>Birthday</Th>
                       <Th>Gender</Th>
                       <Th>Status</Th>
+                      <Th>Worship centre</Th>
                       <Th>Submitted</Th>
                     </tr>
                   </thead>
@@ -229,6 +243,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           {member.training_class_status}
                           {member.training_class_other ? `: ${member.training_class_other}` : ""}
                         </Td>
+                        <Td>{member.allocation?.centre.name ?? "Unallocated"}</Td>
                         <Td>{formatDateTime(member.submitted_at)}</Td>
                       </tr>
                     ))}
@@ -244,7 +259,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </div>
         )}
 
-        <section className="mt-8 rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_18px_60px_rgba(42,45,67,0.10)] backdrop-blur-xl sm:p-5">
+        <section id="feedback" className="mt-8 scroll-mt-5 rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_18px_60px_rgba(42,45,67,0.10)] backdrop-blur-xl sm:p-5">
           <div className="mb-5 flex flex-col gap-4 border-b border-[#e8eaf0] pb-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase text-[#8b90a3]">Anonymous feedback</p>
@@ -267,7 +282,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b90a3]" />
               <input
                 name="feedbackQ"
-                defaultValue={searchParams.feedbackQ ?? ""}
+                defaultValue={filters.feedbackQ ?? ""}
                 className="h-12 w-full rounded-lg border border-[#e0e3ea] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none placeholder:text-[#9aa0af] focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
                 placeholder="Search feedback text"
               />
@@ -311,7 +326,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   );
 }
 
-async function getMembers(filters: AdminPageProps["searchParams"]) {
+async function getMembers(filters: AdminSearchParams) {
   const supabase = createSupabaseAdminClient();
   let query = supabase
     .from("members")
@@ -338,7 +353,24 @@ async function getMembers(filters: AdminPageProps["searchParams"]) {
     return [];
   }
 
-  const members = (data ?? []) as MemberRecord[];
+  const [allocationsResult, centresResult] = await Promise.all([
+    supabase.from("member_allocations").select("*").limit(1000),
+    supabase.from("worship_centres").select("*")
+  ]);
+
+  if (allocationsResult.error) {
+    console.error("Admin allocations fetch failed", allocationsResult.error);
+  }
+
+  if (centresResult.error) {
+    console.error("Admin worship centres fetch failed", centresResult.error);
+  }
+
+  const members = attachAllocations(
+    (data ?? []) as MemberRecord[],
+    (allocationsResult.data ?? []) as MemberAllocation[],
+    (centresResult.data ?? []) as WorshipCentre[]
+  );
   const term = filters.q?.trim().toLowerCase();
 
   if (!term) {
@@ -357,7 +389,8 @@ async function getMembers(filters: AdminPageProps["searchParams"]) {
       member.matric_number,
       member.matric_number_key,
       member.training_class_status,
-      member.training_class_other ?? ""
+      member.training_class_other ?? "",
+      member.allocation?.centre.name ?? ""
     ]
       .join(" ")
       .toLowerCase()
@@ -390,7 +423,7 @@ async function getFeedback(searchTerm: string) {
   );
 }
 
-function cleanFilters(filters: AdminPageProps["searchParams"]) {
+function cleanFilters(filters: AdminSearchParams) {
   return Object.fromEntries(
     Object.entries(filters).filter(([, value]) => typeof value === "string" && value.trim())
   ) as Record<string, string>;
@@ -405,7 +438,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function MobileMemberCard({ member }: { member: MemberRecord }) {
+function MobileMemberCard({ member }: { member: AllocationMember }) {
   return (
     <article className="rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_14px_40px_rgba(42,45,67,0.08)] backdrop-blur-xl">
       <div className="flex items-start justify-between gap-3">
@@ -423,6 +456,7 @@ function MobileMemberCard({ member }: { member: MemberRecord }) {
         <CardLine label="Level" value={formatLevel(member.level)} />
         <CardLine label="Bible Study Unit" value={formatBibleStudyUnit(member.bible_study_unit)} />
         <CardLine label="Birthday" value={formatDate(member.birthday)} />
+        <CardLine label="Worship Centre" value={member.allocation?.centre.name ?? "Unallocated"} />
         <CardLine
           label="Status"
           value={`${member.training_class_status}${member.training_class_other ? `: ${member.training_class_other}` : ""}`}

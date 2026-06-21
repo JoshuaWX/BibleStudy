@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole, MapPinned } from "lucide-react";
 
 import { FloatingWindow } from "@/components/floating-window";
 import { MemberForm } from "@/components/member-form";
@@ -20,13 +20,17 @@ export default function HomePage() {
           <Image src="/rccg-logo.png" alt="" width={32} height={32} className="object-contain" />
         </Link>
 
-        <Link
-          href="/admin/login"
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/70 bg-white/65 px-3 text-sm font-bold text-[#34384b] shadow-sm backdrop-blur transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#6d5df6]/15"
-        >
-          <LockKeyhole className="h-4 w-4" />
-          Admin
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/allocation" className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#6d5df6] px-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(109,93,246,0.20)] transition hover:bg-[#5c4bee] focus:outline-none focus:ring-4 focus:ring-[#6d5df6]/15">
+            <MapPinned className="h-4 w-4" />
+            <span className="hidden sm:inline">View allocation</span>
+            <span className="sm:hidden">Allocation</span>
+          </Link>
+          <Link href="/admin/login" className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/70 bg-white/65 px-3 text-sm font-bold text-[#34384b] shadow-sm backdrop-blur transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#6d5df6]/15">
+            <LockKeyhole className="h-4 w-4" />
+            <span className="hidden sm:inline">Admin</span>
+          </Link>
+        </div>
       </header>
 
       <section className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center px-4 pb-12 pt-6 sm:px-6 lg:pt-10">

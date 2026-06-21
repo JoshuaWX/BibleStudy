@@ -16,6 +16,7 @@ create table if not exists public.members (
       'Compliance unit',
       'Welfare unit',
       'Outline-Collation unit',
+      'Media unit',
       'not interested'
     )
   ),
@@ -143,6 +144,7 @@ begin
         'Compliance unit',
         'Welfare unit',
         'Outline-Collation unit',
+        'Media unit',
         'not interested'
       )
     )
@@ -235,3 +237,70 @@ alter table public.anonymous_feedback force row level security;
 -- No member identifiers, IP addresses, user agents, or profile context are stored.
 revoke all on public.anonymous_feedback from anon;
 revoke all on public.anonymous_feedback from authenticated;
+
+create table if not exists public.worship_centres (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(trim(name)) between 2 and 100),
+  name_key text generated always as (lower(trim(name))) stored unique,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+insert into public.worship_centres (name)
+values
+  ('3-in-1 Hall A'),
+  ('3-in-1 Hall B'),
+  ('3-in-1 Hall C'),
+  ('Sapetro'),
+  ('Chapel')
+on conflict (name_key) do nothing;
+
+create table if not exists public.member_allocations (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null unique references public.members (id) on delete cascade,
+  centre_id uuid not null references public.worship_centres (id) on delete restrict,
+  assigned_by uuid references auth.users (id) on delete set null,
+  assigned_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists member_allocations_centre_id_idx
+  on public.member_allocations (centre_id);
+
+create index if not exists member_allocations_updated_at_idx
+  on public.member_allocations (updated_at desc);
+
+create or replace function public.set_record_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists worship_centres_set_updated_at on public.worship_centres;
+create trigger worship_centres_set_updated_at
+before update on public.worship_centres
+for each row
+execute function public.set_record_updated_at();
+
+drop trigger if exists member_allocations_set_updated_at on public.member_allocations;
+create trigger member_allocations_set_updated_at
+before update on public.member_allocations
+for each row
+execute function public.set_record_updated_at();
+
+alter table public.worship_centres enable row level security;
+alter table public.worship_centres force row level security;
+alter table public.member_allocations enable row level security;
+alter table public.member_allocations force row level security;
+
+-- Worship centres and allocations are managed only by approved server-side admin routes.
+-- The public lookup endpoint also uses the server-only service role and returns only a centre name.
+revoke all on public.worship_centres from anon;
+revoke all on public.worship_centres from authenticated;
+revoke all on public.member_allocations from anon;
+revoke all on public.member_allocations from authenticated;
