@@ -12,6 +12,9 @@ import { type MemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+const MEMBER_SORT_OPTIONS = ["submitted", "birth_month"] as const;
+type MemberSort = (typeof MEMBER_SORT_OPTIONS)[number];
+
 export async function GET(request: NextRequest) {
   const authClient = await createSupabaseServerClient();
   const {
@@ -27,7 +30,8 @@ export async function GET(request: NextRequest) {
     q: params.get("q") ?? "",
     status: params.get("status") ?? "",
     gender: params.get("gender") ?? "",
-    level: params.get("level") ?? ""
+    level: params.get("level") ?? "",
+    memberSort: params.get("memberSort") ?? ""
   });
 
   const csv = toCsv(members);
@@ -42,8 +46,9 @@ export async function GET(request: NextRequest) {
   });
 }
 
-async function getExportMembers(filters: { q: string; status: string; gender: string; level: string }) {
+async function getExportMembers(filters: { q: string; status: string; gender: string; level: string; memberSort: string }) {
   const supabase = createSupabaseAdminClient();
+  const sortMode = normalizeMemberSort(filters.memberSort);
   let query = supabase
     .from("members")
     .select("*")
@@ -89,11 +94,9 @@ async function getExportMembers(filters: { q: string; status: string; gender: st
   );
   const term = filters.q.trim().toLowerCase();
 
-  if (!term) {
-    return members;
-  }
-
-  return members.filter((member) =>
+  const filteredMembers = !term
+    ? members
+    : members.filter((member) =>
     [
       member.surname,
       member.other_names,
@@ -112,6 +115,37 @@ async function getExportMembers(filters: { q: string; status: string; gender: st
       .toLowerCase()
       .includes(term)
   );
+
+  return sortMembers(filteredMembers, sortMode);
+}
+
+function normalizeMemberSort(value?: string): MemberSort {
+  return MEMBER_SORT_OPTIONS.includes(value as MemberSort) ? (value as MemberSort) : "submitted";
+}
+
+function sortMembers(members: AllocationMember[], sortMode: MemberSort): AllocationMember[] {
+  if (sortMode === "submitted") {
+    return members;
+  }
+
+  return [...members].sort((first, second) => {
+    const firstDate = new Date(`${first.birthday}T00:00:00`);
+    const secondDate = new Date(`${second.birthday}T00:00:00`);
+
+    const monthDiff = firstDate.getUTCMonth() - secondDate.getUTCMonth();
+    if (monthDiff !== 0) {
+      return monthDiff;
+    }
+
+    const dayDiff = firstDate.getUTCDate() - secondDate.getUTCDate();
+    if (dayDiff !== 0) {
+      return dayDiff;
+    }
+
+    const firstName = `${first.surname} ${first.other_names}`.trim();
+    const secondName = `${second.surname} ${second.other_names}`.trim();
+    return firstName.localeCompare(secondName, "en", { sensitivity: "base" });
+  });
 }
 
 function toCsv(members: AllocationMember[]) {

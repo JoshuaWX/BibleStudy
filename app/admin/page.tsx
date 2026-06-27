@@ -22,8 +22,12 @@ type AdminSearchParams = {
   status?: string;
   gender?: string;
   level?: string;
+  memberSort?: string;
   feedbackQ?: string;
 };
+
+const MEMBER_SORT_OPTIONS = ["submitted", "birth_month"] as const;
+type MemberSort = (typeof MEMBER_SORT_OPTIONS)[number];
 
 type AdminPageProps = {
   searchParams: Promise<AdminSearchParams>;
@@ -39,7 +43,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       q: filters.q,
       status: filters.status,
       gender: filters.gender,
-      level: filters.level
+      level: filters.level,
+      memberSort: filters.memberSort
     })
   ).toString()}`;
   const feedbackExportHref = `/admin/feedback/export?${new URLSearchParams(
@@ -143,7 +148,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           />
         </div>
 
-        <form className="mb-5 grid gap-3 rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_18px_60px_rgba(42,45,67,0.10)] backdrop-blur-xl md:grid-cols-2 xl:grid-cols-[1fr_180px_220px_180px_auto]">
+        <form className="mb-5 grid gap-3 rounded-lg border border-white/80 bg-white/82 p-4 shadow-[0_18px_60px_rgba(42,45,67,0.10)] backdrop-blur-xl md:grid-cols-2 xl:grid-cols-[1fr_180px_220px_180px_210px_auto]">
           <label className="relative block">
             <span className="sr-only">Search records</span>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b90a3]" />
@@ -192,6 +197,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 {gender}
               </option>
             ))}
+          </select>
+
+          <select
+            name="memberSort"
+            defaultValue={normalizeMemberSort(filters.memberSort)}
+            className="h-12 rounded-lg border border-[#e0e3ea] bg-white px-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
+          >
+            <option value="submitted">Newest submitted</option>
+            <option value="birth_month">Month of birth (Jan-Dec)</option>
           </select>
 
           <button
@@ -328,6 +342,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
 async function getMembers(filters: AdminSearchParams) {
   const supabase = createSupabaseAdminClient();
+  const sortMode = normalizeMemberSort(filters.memberSort);
   let query = supabase
     .from("members")
     .select("*")
@@ -373,11 +388,9 @@ async function getMembers(filters: AdminSearchParams) {
   );
   const term = filters.q?.trim().toLowerCase();
 
-  if (!term) {
-    return members;
-  }
-
-  return members.filter((member) =>
+  const filteredMembers = !term
+    ? members
+    : members.filter((member) =>
     [
       member.surname,
       member.other_names,
@@ -396,6 +409,35 @@ async function getMembers(filters: AdminSearchParams) {
       .toLowerCase()
       .includes(term)
   );
+
+  return sortMembers(filteredMembers, sortMode);
+}
+
+function normalizeMemberSort(value?: string): MemberSort {
+  return MEMBER_SORT_OPTIONS.includes(value as MemberSort) ? (value as MemberSort) : "submitted";
+}
+
+function sortMembers(members: AllocationMember[], sortMode: MemberSort): AllocationMember[] {
+  if (sortMode === "submitted") {
+    return members;
+  }
+
+  return [...members].sort((first, second) => {
+    const firstDate = new Date(`${first.birthday}T00:00:00`);
+    const secondDate = new Date(`${second.birthday}T00:00:00`);
+
+    const monthDiff = firstDate.getUTCMonth() - secondDate.getUTCMonth();
+    if (monthDiff !== 0) {
+      return monthDiff;
+    }
+
+    const dayDiff = firstDate.getUTCDate() - secondDate.getUTCDate();
+    if (dayDiff !== 0) {
+      return dayDiff;
+    }
+
+    return memberDisplayName(first).localeCompare(memberDisplayName(second), "en", { sensitivity: "base" });
+  });
 }
 
 async function getFeedback(searchTerm: string) {
