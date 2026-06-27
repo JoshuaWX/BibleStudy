@@ -12,9 +12,6 @@ import { type MemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const MEMBER_SORT_OPTIONS = ["submitted", "birth_month"] as const;
-type MemberSort = (typeof MEMBER_SORT_OPTIONS)[number];
-
 export async function GET(request: NextRequest) {
   const authClient = await createSupabaseServerClient();
   const {
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest) {
     status: params.get("status") ?? "",
     gender: params.get("gender") ?? "",
     level: params.get("level") ?? "",
-    memberSort: params.get("memberSort") ?? ""
+    birthMonth: params.get("birthMonth") ?? ""
   });
 
   const csv = toCsv(members);
@@ -46,9 +43,8 @@ export async function GET(request: NextRequest) {
   });
 }
 
-async function getExportMembers(filters: { q: string; status: string; gender: string; level: string; memberSort: string }) {
+async function getExportMembers(filters: { q: string; status: string; gender: string; level: string; birthMonth: string }) {
   const supabase = createSupabaseAdminClient();
-  const sortMode = normalizeMemberSort(filters.memberSort);
   let query = supabase
     .from("members")
     .select("*")
@@ -116,36 +112,40 @@ async function getExportMembers(filters: { q: string; status: string; gender: st
       .includes(term)
   );
 
-  return sortMembers(filteredMembers, sortMode);
-}
+  const birthMonth = parseBirthMonth(filters.birthMonth);
 
-function normalizeMemberSort(value?: string): MemberSort {
-  return MEMBER_SORT_OPTIONS.includes(value as MemberSort) ? (value as MemberSort) : "submitted";
-}
-
-function sortMembers(members: AllocationMember[], sortMode: MemberSort): AllocationMember[] {
-  if (sortMode === "submitted") {
-    return members;
+  if (!birthMonth) {
+    return filteredMembers;
   }
 
-  return [...members].sort((first, second) => {
-    const firstDate = new Date(`${first.birthday}T00:00:00`);
-    const secondDate = new Date(`${second.birthday}T00:00:00`);
+  return filteredMembers.filter((member) => getBirthdayMonth(member.birthday) === birthMonth);
+}
 
-    const monthDiff = firstDate.getUTCMonth() - secondDate.getUTCMonth();
-    if (monthDiff !== 0) {
-      return monthDiff;
-    }
+function parseBirthMonth(value?: string) {
+  if (!value) {
+    return null;
+  }
 
-    const dayDiff = firstDate.getUTCDate() - secondDate.getUTCDate();
-    if (dayDiff !== 0) {
-      return dayDiff;
-    }
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    return null;
+  }
 
-    const firstName = `${first.surname} ${first.other_names}`.trim();
-    const secondName = `${second.surname} ${second.other_names}`.trim();
-    return firstName.localeCompare(secondName, "en", { sensitivity: "base" });
-  });
+  const month = Number.parseInt(trimmed, 10);
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  return month;
+}
+
+function getBirthdayMonth(birthday: string) {
+  const date = new Date(`${birthday}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.getUTCMonth() + 1;
 }
 
 function toCsv(members: AllocationMember[]) {

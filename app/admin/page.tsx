@@ -22,12 +22,24 @@ type AdminSearchParams = {
   status?: string;
   gender?: string;
   level?: string;
-  memberSort?: string;
+  birthMonth?: string;
   feedbackQ?: string;
 };
 
-const MEMBER_SORT_OPTIONS = ["submitted", "birth_month"] as const;
-type MemberSort = (typeof MEMBER_SORT_OPTIONS)[number];
+const BIRTH_MONTH_OPTIONS = [
+  { value: "1", label: "January" },
+  { value: "2", label: "February" },
+  { value: "3", label: "March" },
+  { value: "4", label: "April" },
+  { value: "5", label: "May" },
+  { value: "6", label: "June" },
+  { value: "7", label: "July" },
+  { value: "8", label: "August" },
+  { value: "9", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" }
+] as const;
 
 type AdminPageProps = {
   searchParams: Promise<AdminSearchParams>;
@@ -44,7 +56,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       status: filters.status,
       gender: filters.gender,
       level: filters.level,
-      memberSort: filters.memberSort
+      birthMonth: filters.birthMonth
     })
   ).toString()}`;
   const feedbackExportHref = `/admin/feedback/export?${new URLSearchParams(
@@ -200,12 +212,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </select>
 
           <select
-            name="memberSort"
-            defaultValue={normalizeMemberSort(filters.memberSort)}
+            name="birthMonth"
+            defaultValue={filters.birthMonth ?? ""}
             className="h-12 rounded-lg border border-[#e0e3ea] bg-white px-3 text-sm font-bold text-[#252a3a] shadow-[0_5px_16px_rgba(25,29,45,0.05)] outline-none focus:border-[#7a67ff] focus:ring-4 focus:ring-[#725cff]/10"
           >
-            <option value="submitted">Newest submitted</option>
-            <option value="birth_month">Month of birth (Jan-Dec)</option>
+            <option value="">All birth months</option>
+            {BIRTH_MONTH_OPTIONS.map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
+              </option>
+            ))}
           </select>
 
           <button
@@ -342,7 +358,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
 async function getMembers(filters: AdminSearchParams) {
   const supabase = createSupabaseAdminClient();
-  const sortMode = normalizeMemberSort(filters.memberSort);
   let query = supabase
     .from("members")
     .select("*")
@@ -410,34 +425,40 @@ async function getMembers(filters: AdminSearchParams) {
       .includes(term)
   );
 
-  return sortMembers(filteredMembers, sortMode);
-}
+  const birthMonth = parseBirthMonth(filters.birthMonth);
 
-function normalizeMemberSort(value?: string): MemberSort {
-  return MEMBER_SORT_OPTIONS.includes(value as MemberSort) ? (value as MemberSort) : "submitted";
-}
-
-function sortMembers(members: AllocationMember[], sortMode: MemberSort): AllocationMember[] {
-  if (sortMode === "submitted") {
-    return members;
+  if (!birthMonth) {
+    return filteredMembers;
   }
 
-  return [...members].sort((first, second) => {
-    const firstDate = new Date(`${first.birthday}T00:00:00`);
-    const secondDate = new Date(`${second.birthday}T00:00:00`);
+  return filteredMembers.filter((member) => getBirthdayMonth(member.birthday) === birthMonth);
+}
 
-    const monthDiff = firstDate.getUTCMonth() - secondDate.getUTCMonth();
-    if (monthDiff !== 0) {
-      return monthDiff;
-    }
+function parseBirthMonth(value?: string) {
+  if (!value) {
+    return null;
+  }
 
-    const dayDiff = firstDate.getUTCDate() - secondDate.getUTCDate();
-    if (dayDiff !== 0) {
-      return dayDiff;
-    }
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    return null;
+  }
 
-    return memberDisplayName(first).localeCompare(memberDisplayName(second), "en", { sensitivity: "base" });
-  });
+  const month = Number.parseInt(trimmed, 10);
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  return month;
+}
+
+function getBirthdayMonth(birthday: string) {
+  const date = new Date(`${birthday}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.getUTCMonth() + 1;
 }
 
 async function getFeedback(searchTerm: string) {
